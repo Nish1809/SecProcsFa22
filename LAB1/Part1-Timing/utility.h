@@ -75,7 +75,10 @@ static inline uint64_t one_block_access(uint64_t addr)
 
 }
 
-
+static inline void wbinvd()
+{
+	asm volatile("invd");
+}
 // A wrapper function of the clflush instruction
 // The instruction evict the given address from the cache to DRAM
 // so that the next time the line is accessed, it will be fetched from DRAM
