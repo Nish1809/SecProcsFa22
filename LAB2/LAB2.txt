@@ -1,0 +1,22 @@
+PART1
+
+1. How many addresses need to be flushed at the first step : 
+Ans : Need to flush set 0 in cache which is 8 ways so 8 addresses. Bring the address in which is at a 4096 byte(0x1000 hence set 0) granularity. 
+Then access the 256 pages and see which one hits in the cache.
+
+2. Now assume the attacker and victim no longer share a memory region.
+Would your attack still work? If not, changes could you need to make to make it work?
+Ans: No the attack would not work anymore and we'd then need to Prime+Probe using the LLC to infer the same information
+
+PART2
+
+
+3. In our example, the attacker tries to leak the values in the array
+secret_part2. In a real-world attack, people can use Spectre to leak arbitrary values in the victim’s
+address space. Explain how the attacker can achieve this.
+Ans: This attacj uses conditional branches but we can also poison indirect branches to mistrain the predictor and make it jump to a location chosen
+by the attacker to leak memory. Using this victim code performs accesses to memory it wouldn't otherwise during execution.
+
+4. Try to tune the training parameters and answer this question: What is the
+fewest number of times you need to train the branch on line 9 in Listing 3 to make the attack work?
+Ans: Once for every byte access in the secret
