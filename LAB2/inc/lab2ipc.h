@@ -16,6 +16,12 @@
 // Maximum secret length (in bytes)
 #define LAB2_SECRET_MAX_LEN ((64))
 
+// Number of iterations to figure out secret
+#define NUM_ITERATIONS ((80))
+
+// Threshold to check between L1/L2 and DRAM
+#define THRESHOLD ((172))
+
 /*********************************************
  * Lab 2 Inter-Process Communication structs *
  *********************************************/

